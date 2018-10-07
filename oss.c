@@ -16,7 +16,7 @@ int main ( int argc, char *argv[] ) {
 				itself and any children alive at the time. Can be changed if specified
 				with the -t option.
 				*/
-	char *logName;	/* Character array to be specified with -l option or default option */
+	char *logName = "";	/* Character array to be specified with -l option or default option */
 
 	/* Loop to implement getopt to get any command-line options and/or arguments */
 	/* Options -s, -l, and -t all require arguments */
