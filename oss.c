@@ -8,10 +8,10 @@
 
 int main ( int argc, char *argv[] ) {
 	printf ( "Hello, from oss.\n" );
-	int c;	/* Controls the getopt loop */
-	int maxProcesses = 5;	/* Default number of user processes to spawn. Can be changed if 
-				specified with the -s option. 
-				*/
+	int index;	/* Control variable for loops */
+	int opt;	/* Controls the getopt loop */
+	int totalProcesses = 100;	/* Maximum number of processes allowed to be created in total */
+	int maxCurrentProcesses = 5;	/* Default number of user processes to spawn. Can be changed if specified with the -s option.*/
 	int killTime = 2;	/* Default number of the seconds after which the oss should terminate
 				itself and any children alive at the time. Can be changed if specified
 				with the -t option.
@@ -20,8 +20,8 @@ int main ( int argc, char *argv[] ) {
 
 	/* Loop to implement getopt to get any command-line options and/or arguments */
 	/* Options -s, -l, and -t all require arguments */
-	while ( ( c = getopt ( argc, argv, "hs:l:t:" ) ) != -1 ) {
-		switch ( c ) {
+	while ( ( opt = getopt ( argc, argv, "hs:l:t:" ) ) != -1 ) {
+		switch ( opt ) {
 			/* Display the help message */
 			case 'h':
 				printf ( "Program: ./oss\n" );
@@ -41,7 +41,7 @@ int main ( int argc, char *argv[] ) {
 			
 			/* Specify the maximum number of user processes spawned */
 			case 's':
-				maxProcesses = atoi ( optarg++ );
+				maxCurrentProcesses = atoi ( optarg++ );
 				break;
 
 			/* Specify the name of the log file to be used */
@@ -63,9 +63,7 @@ int main ( int argc, char *argv[] ) {
 	if ( logName[0] == '\0' ) 
 		logName = "log.txt";
 
-	printf ( "Max Processes: %d\n", maxProcesses );
-	printf ( "Terminate Time: %d\n", killTime );
-	printf ( "Log file: %s\n", logName );
+	printf ( "Total processes: %d\tMax processes: %d\tKill time: %d\tFile name: %s\n", totalProcesses, maxCurrentProcesses, killTime, logName );
 
 	return 0;
 }
