@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <signal.h>
 
 int main ( int argc, char *argv[] ) {
 
@@ -49,6 +50,8 @@ int main ( int argc, char *argv[] ) {
 	//shmMsg[0] = getpid();
 	//shmMsg[1] = shmClock[0];
 	//shmMsg[2] = shmClock[1];
+	
+	sleep ( 10 );	
 	
 	printf ( "Child -- pid %d from parent pid %d\n", getpid(), getppid() );
 	// printf ( "Child: %d terminated at %d.%d\n", shmMsg[0], shmMsg[1], shmMsg[2] );
