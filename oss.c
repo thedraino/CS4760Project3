@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/ipc.h>
+#include <sys/shm.h>
 
 int main ( int argc, char *argv[] ) {
 	int i, j;	/* Control variable for loops */
@@ -69,6 +70,29 @@ int main ( int argc, char *argv[] ) {
 	/* Prints the stored values to check */
 	printf ( "Total processes: %d\tMax processes: %d\tKill time: %d\tFile name: %s\n", totalProcesses, maxCurrentProcesses, killTime, logName );
 
+	/* Variables for shared memory */
+	int clockBuffer[2];	
+	key_t key1 = 1993;
+	int *shmClock;
+	int shmClockid;
+	
+	int msgBuffer[3];
+	key_t key2 = 1994;
+	int *shmMsg;
+	int shmMsgid;
+
+	/* Allocation and initialization of shared memory for clock and message */
+	/* Clock shared memory */
+	shmClockid = shmget ( key1, sizeof ( clockBuffer ), IPC_CREAT | 0666 );
+	shmClock = ( int *) shmat ( shmClockid, NULL, 0 );
+	shmClock[0] = 0;
+	shmClock[1] = 0;	
+
+	/* Message shared memory */
+	shmMsgid = shmget ( key2, sizeof ( msgBuffer ), IPC_CREAT | 0666 );
+	shmMsg = ( int *) shmat ( shmMsgid, NULL, 0 );
+	shmMsg = NULL;
+
 	/* Setup for child process creation */
 	char *args[] = { "./user", NULL };	/* Array with information for exec */
 	pid_t pid;
@@ -98,6 +122,13 @@ int main ( int argc, char *argv[] ) {
 	} 
 	
 	printf ( "Parent -- pid %d.\n", getpid() );
+	printf ( "Seconds: %d\tNano: %d\n", shmClock[0], shmClock[1] );	
 
+	/* Deallocation of shared memory segments */
+	shmdt ( shmClock);
+	shmdt ( shmMsg );
+	shmctl ( shmClockid, IPC_RMID, NULL );
+	shmctl ( shmMsgid, IPC_RMID, NULL );
+	
 	return 0;
 }
