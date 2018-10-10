@@ -5,12 +5,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/ipc.h>
 
 int main ( int argc, char *argv[] ) {
-	printf ( "Hello, from oss.\n" );
-	int index;	/* Control variable for loops */
+	int i, j;	/* Control variable for loops */
 	int opt;	/* Controls the getopt loop */
-	int totalProcesses = 100;	/* Maximum number of processes allowed to be created in total */
+	int total = 0;	/* */
+	int totalProcesses = 50;	/* Maximum number of processes allowed to be created in total */
 	int maxCurrentProcesses = 5;	/* Default number of user processes to spawn. Can be changed if specified with the -s option.*/
 	int killTime = 2;	/* Default number of the seconds after which the oss should terminate
 				itself and any children alive at the time. Can be changed if specified
@@ -63,7 +66,38 @@ int main ( int argc, char *argv[] ) {
 	if ( logName[0] == '\0' ) 
 		logName = "log.txt";
 
+	/* Prints the stored values to check */
 	printf ( "Total processes: %d\tMax processes: %d\tKill time: %d\tFile name: %s\n", totalProcesses, maxCurrentProcesses, killTime, logName );
+
+	/* Setup for child process creation */
+	char *args[] = { "./user", NULL };	/* Array with information for exec */
+	pid_t pid;
+	int status;
+
+	/* Fork off the initial children as specified by maxCurrentProcesses */
+	j = 0;
+	for ( i = 0; i < totalProcesses; ++i ) {
+		while ( ( j < maxCurrentProcesses ) && ( total < totalProcesses ) ) {
+			pid = fork();
+			/* In the child process */
+			if ( pid == 0 ) {
+				execv ( args[0], args );
+				exit ( 127 );
+			}
+			
+			/* The fork failed */
+			else if ( pid < 0 ) {
+				perror ( "Unable to fork" );
+				exit ( -1 );
+			}
+			j++;
+			total++;
+		}
+		wait ( 0 );
+		j--;
+	} 
+	
+	printf ( "Parent -- pid %d.\n", getpid() );
 
 	return 0;
 }
