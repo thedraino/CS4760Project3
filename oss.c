@@ -12,8 +12,8 @@
 int main ( int argc, char *argv[] ) {
 	int i, j;	/* Control variable for loops */
 	int opt;	/* Controls the getopt loop */
-	int total = 0;	/* */
-	int totalProcesses = 50;	/* Maximum number of processes allowed to be created in total */
+	int total = 0;	/* Serves as a control counter during child process creation */
+	int totalProcesses = 100;	/* Maximum number of processes allowed to be created in total */
 	int maxCurrentProcesses = 5;	/* Default number of user processes to spawn. Can be changed if specified with the -s option.*/
 	int killTime = 2;	/* Default number of the seconds after which the oss should terminate
 				itself and any children alive at the time. Can be changed if specified
