@@ -5,7 +5,8 @@
 #include <stdio.h>
 
 int main ( int argc, char *argv[] ) {
-	printf ( "Hello, from user.\n" );
+	
+	printf ( "Child -- pid %d from parent pid %d\n", getpid(), getppid() );
 
 	return 0;
 }
