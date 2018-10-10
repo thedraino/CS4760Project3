@@ -9,8 +9,29 @@
 #include <sys/wait.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <signal.h>
+
+/* Signal handler for termination after z seconds have elapsed */
+void sigAlarm_handler ( int signum ) {
+	int clockBuffer[2];
+	key_t key1 = 1993;
+	int shmClockid;
+
+	int msgBuffer[3];
+	key_t key2 = 1994;
+	int shmMsgid;
+
+	shmClockid = shmget ( key1, sizeof ( clockBuffer ), 0666 );
+	shmMsgid = shmget ( key2, sizeof ( msgBuffer ), 0666 );
+
+	shmctl ( shmClockid, IPC_RMID, NULL );
+	shmctl ( shmMsgid, IPC_RMID, NULL );
+
+	exit ( 0 ); 
+}
 
 int main ( int argc, char *argv[] ) {
+	signal ( SIGALRM, sigAlarm_handler ); 
 	int i, j;	/* Control variable for loops */
 	int opt;	/* Controls the getopt loop */
 	int total = 0;	/* Serves as a control counter during child process creation */
@@ -66,6 +87,10 @@ int main ( int argc, char *argv[] ) {
 	/* Creates the default file name for the log file if no name is provided with -l option.*/
 	if ( logName[0] == '\0' ) 
 		logName = "log.txt";
+
+	/* Set alarm based on value of killTime */
+	/* All processes will be terminated if anything is still running after killTime seconds */
+	alarm ( killTime );
 
 	/* Prints the stored values to check */
 	printf ( "Total processes: %d\tMax processes: %d\tKill time: %d\tFile name: %s\n", totalProcesses, maxCurrentProcesses, killTime, logName );
