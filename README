@@ -11,5 +11,31 @@ Assignment 3
 	- user.c
 	- README: description of project implemenation, project results, and any problems/general feedback
 	- VCLog: version control commit log
+	
+	*Note: the logfile, once written to by oss, will remain after each run in the directory. If a new
+	file name is passed with the -l option, that file will created in addition to whatever files were already
+	present. If not file name is passed, the default file name will be used and any content already there will
+	be overwritten.
 
+I know that child processes are forking correctly. I tested with another log file that had some additional fprintf
+statements. It would print everytime the process tried to enter the critical section, entered the critical section,
+and left the critical section. When I passed 1 with the -s option, the log file clearly showed that each process
+started and then ended after the previous process had started. 
 
+The same thought applies to the semaphores. I tested them using the same fprintf statements. In the resulting logfile, 
+never was there back to back line saying two processes had reached the critical section at the same time. These lines
+were changed to just printf statements and commented out in the user.c file around the critical section in case the 
+grader would like to see what was going on with the critical section. 
+
+The only other thing of note is the seed for random numbers. I just used time(0). I understand that this is causing 
+the same random number to be generated for child processes created at that time, but I figured that added to the current
+time in the clock would still generate a different number for each process. I could have done something like 
+	srand ( time ( 0 ) ^ getpid() )
+but I didn't want to risk messing up anything else in the program. 
+
+Unless I am misunderstanding something with the project description, I think that my programs are working as they should 
+be. Child processes are finishing in different orders depending on the time they have and when they get access to the 
+critical section/when they qualify to terminate. Please ask me if I left out something crucial or my comments were clear
+enough at a certain part of the code. 
+
+Please see VCLog for the different changes made to the programs over the course of the project. 
