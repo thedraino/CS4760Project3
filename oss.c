@@ -9,23 +9,30 @@
 #include <sys/wait.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <semaphore.h>
 #include <signal.h>
+#include <time.h>
+#include <fcntl.h>
+
+#define SEM_NAME "/semaphore"
 
 /* Signal handler for termination after z seconds have elapsed */
 void sigAlarm_handler ( int signum ) {
 	int clockBuffer[2];
 	key_t key1 = 1993;
-	int shmClockid;
+	int shmClockID;
 
 	int msgBuffer[3];
 	key_t key2 = 1994;
-	int shmMsgid;
+	int shmMsgID;
 
-	shmClockid = shmget ( key1, sizeof ( clockBuffer ), 0666 );
-	shmMsgid = shmget ( key2, sizeof ( msgBuffer ), 0666 );
+	shmClockID = shmget ( key1, sizeof ( clockBuffer ), 0666 );
+	shmMsgID = shmget ( key2, sizeof ( msgBuffer ), 0666 );
 
-	shmctl ( shmClockid, IPC_RMID, NULL );
-	shmctl ( shmMsgid, IPC_RMID, NULL );
+	shmctl ( shmClockID, IPC_RMID, NULL );
+	shmctl ( shmMsgID, IPC_RMID, NULL );
+
+	sem_unlink ( SEM_NAME );
 
 	exit ( 0 ); 
 }
@@ -35,13 +42,16 @@ int main ( int argc, char *argv[] ) {
 	int i, j;	/* Control variable for loops */
 	int opt;	/* Controls the getopt loop */
 	int total = 0;	/* Serves as a control counter during child process creation */
-	int totalProcesses = 100;	/* Maximum number of processes allowed to be created in total */
+	int totalProcesses = 10;	/* Maximum number of processes allowed to be created in total */
 	int maxCurrentProcesses = 5;	/* Default number of user processes to spawn. Can be changed if specified with the -s option.*/
 	int killTime = 2;	/* Default number of the seconds after which the oss should terminate
 				itself and any children alive at the time. Can be changed if specified
 				with the -t option.
 				*/
 	char *logName = "";	/* Character array to be specified with -l option or default option */
+
+	sem_unlink ( SEM_NAME );
+	sem_t *sem = sem_open ( SEM_NAME, O_CREAT, 0777, 1 ); /* Creation of named semaphore to be used in oss and user */
 
 	/* Loop to implement getopt to get any command-line options and/or arguments */
 	/* Options -s, -l, and -t all require arguments */
@@ -99,29 +109,33 @@ int main ( int argc, char *argv[] ) {
 	int clockBuffer[2];	
 	key_t key1 = 1993;
 	int *shmClock;
-	int shmClockid;
+	int shmClockID;
 	
 	int msgBuffer[3];
 	key_t key2 = 1994;
 	int *shmMsg;
-	int shmMsgid;
+	int shmMsgID;
 
 	/* Allocation and initialization of shared memory for clock and message */
 	/* Clock shared memory */
-	shmClockid = shmget ( key1, sizeof ( clockBuffer ), IPC_CREAT | 0666 );
-	shmClock = ( int *) shmat ( shmClockid, NULL, 0 );
+	shmClockID = shmget ( key1, sizeof ( clockBuffer ), IPC_CREAT | 0666 );
+	shmClock = ( int *) shmat ( shmClockID, NULL, 0 );
 	shmClock[0] = 0;
 	shmClock[1] = 0;	
 
 	/* Message shared memory */
-	shmMsgid = shmget ( key2, sizeof ( msgBuffer ), IPC_CREAT | 0666 );
-	shmMsg = ( int *) shmat ( shmMsgid, NULL, 0 );
-	shmMsg = NULL;
+	shmMsgID = shmget ( key2, sizeof ( msgBuffer ), IPC_CREAT | 0666 );
+	shmMsg = ( int *) shmat ( shmMsgID, NULL, 0 );
+	shmMsg[0] = 0;
+	shmMsg[1] = 0;
+	shmMsg[2] = 0;
 
 	/* Setup for child process creation */
 	char *args[] = { "./user", NULL };	/* Array with information for exec */
 	pid_t pid;
 	int status;
+
+	srand ( time ( 0 ) );	
 
 	/* Fork off the initial children as specified by maxCurrentProcesses */
 	j = 0;
@@ -142,18 +156,32 @@ int main ( int argc, char *argv[] ) {
 			j++;
 			total++;
 		}
-		wait ( 0 );
-		j--;
-	} 
+		
+		shmClock[1] = shmClock[1] + 1000;
+		while ( shmClock[1] > 1000000 ) {
+			shmClock[0]++;
+			shmClock[1] = shmClock[1] - 1000000;
+		}		
+		
+		wait( 0 );
+		j--; 
+
+		if ( shmMsg[0] != 0 ) {
+			printf ( "Child %d is terminating at %d.%d because it reached %d.%d in the user.\n\n", shmMsg[0], shmClock[0], shmClock[1], shmMsg[1], shmMsg[2] );
+			shmMsg[0] = 0;
+		}
+	}
 	
-	printf ( "Parent -- pid %d.\n", getpid() );
-	printf ( "Seconds: %d\tNano: %d\n", shmClock[0], shmClock[1] );	
+	printf ( "Parent %d is exiting...\n", getpid() );
+
+	/* Unlink the semaphore */
+	sem_unlink ( SEM_NAME );
 
 	/* Deallocation of shared memory segments */
 	shmdt ( shmClock);
 	shmdt ( shmMsg );
-	shmctl ( shmClockid, IPC_RMID, NULL );
-	shmctl ( shmMsgid, IPC_RMID, NULL );
+	shmctl ( shmClockID, IPC_RMID, NULL );
+	shmctl ( shmMsgID, IPC_RMID, NULL );
 	
 	return 0;
 }
