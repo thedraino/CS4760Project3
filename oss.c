@@ -42,7 +42,7 @@ int main ( int argc, char *argv[] ) {
 	int i, j;	/* Control variable for loops */
 	int opt;	/* Controls the getopt loop */
 	int total = 0;	/* Serves as a control counter during child process creation */
-	int totalProcesses = 10;	/* Maximum number of processes allowed to be created in total */
+	int totalProcesses = 100;	/* Maximum number of processes allowed to be created in total */
 	int maxCurrentProcesses = 5;	/* Default number of user processes to spawn. Can be changed if specified with the -s option.*/
 	int killTime = 2;	/* Default number of the seconds after which the oss should terminate
 				itself and any children alive at the time. Can be changed if specified
@@ -97,6 +97,11 @@ int main ( int argc, char *argv[] ) {
 	/* Creates the default file name for the log file if no name is provided with -l option.*/
 	if ( logName[0] == '\0' ) 
 		logName = "log.txt";
+	
+	/* Now that the logfile's name is decided, the file  can be opened for writing */
+	FILE *fp;
+	
+	fp = fopen ( logName, "w+" );
 
 	/* Set alarm based on value of killTime */
 	/* All processes will be terminated if anything is still running after killTime seconds */
@@ -135,8 +140,6 @@ int main ( int argc, char *argv[] ) {
 	pid_t pid;
 	int status;
 
-	srand ( time ( 0 ) );	
-
 	/* Fork off the initial children as specified by maxCurrentProcesses */
 	j = 0;
 	for ( i = 0; i < totalProcesses; ++i ) {
@@ -167,12 +170,15 @@ int main ( int argc, char *argv[] ) {
 		j--; 
 
 		if ( shmMsg[0] != 0 ) {
-			printf ( "Child %d is terminating at %d.%d because it reached %d.%d in the user.\n\n", shmMsg[0], shmClock[0], shmClock[1], shmMsg[1], shmMsg[2] );
+			fprintf ( fp, "OSS: Child %d is terminating at %d.%d because it reached %d.%d in the user.\n\n", shmMsg[0], shmClock[0], shmClock[1], shmMsg[1], shmMsg[2] );
 			shmMsg[0] = 0;
 		}
 	}
 	
 	printf ( "Parent %d is exiting...\n", getpid() );
+
+	/* Close the logfile */
+	fclose ( fp );
 
 	/* Unlink the semaphore */
 	sem_unlink ( SEM_NAME );
